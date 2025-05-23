@@ -8,6 +8,7 @@ multimodal_description = json.load(
     )
 )
 
+scripts = json.load(open('file.json', 'r', encoding='utf-8'))
 
 def process_dataset(dataset, window=110):
     """
@@ -47,7 +48,6 @@ def process_dataset(dataset, window=110):
     content_task_dict = {}
     speaker_task_dict = {}
     sentence_dict = {}
-    num_2speaker = {0: "M", 1: "F"}
     data = pickle.load(
         open(
             f"{dataset}.pkl",
@@ -72,34 +72,31 @@ def process_dataset(dataset, window=110):
     # 对conversation的utterance进行处理，其中index_w用于处理窗口大小设置下面的起始index
     # Process the utterances in the conversation, where 'index_w' is used to handle the starting index under the window size setting.
     for conv_id in all_conv_id:
-        man = 0
-        woman = 0
-        descriptions = []
-
-        for speaker_label in speaker_label_dict[conv_id]:
-            gender = num_2speaker[speaker_label]
-            if gender == "M":
-                utt_name = conv_id + "_" + gender + f"{man:>03d}"
-                man += 1
-            else:
-                utt_name = conv_id + "_" + gender + f"{woman:>03d}"
-                woman += 1
-            descriptions.append(multimodal_description[utt_name])
 
         for conv_turn in range(len(sentence_dict[conv_id])):
             temp_content_str = "Now you are an expert in sentiment and emotional analysis. The conversation enclosed between '### ###' involves multiple speakers and includes  multimodal descriptions. Your task is to thoroughly analyze the content of the dialogue, focusing on the speakers' underlying emotions. Do not rely solely on the multimodal descriptions; instead, critically evaluate the text to provide a nuanced and accurate analysis.### "
 
             index_w = max(conv_turn - window, 0)
 
-            for speaker_label, sub_sent, description in zip(
+            for i, (speaker_label, sub_sent) in enumerate(zip(
                 speaker_label_dict[conv_id][index_w : conv_turn + 1],
                 sentence_dict[conv_id][index_w : conv_turn + 1],
-                descriptions[index_w : conv_turn + 1],
-            ):
-                temp_content_str += (
-                    f'Speaker_{speaker_label}:"{sub_sent}"({description})\t'
-                )
-                # temp_id_task_str += (f'\t Speaker_?:"{sub_sent}"')
+            )):
+                sub_sent = sub_sent.replace('', "'")
+                sub_sent = sub_sent.replace('', "")
+                sub_sent = sub_sent.replace('', "")
+                sub_sent = sub_sent.replace('', "")
+                sub_sent = sub_sent.replace('', " ")
+                sub_sent = sub_sent.replace('', " ")
+                for key, value in scripts[conv_id].items():
+                    if value == sub_sent:
+                        if key == "M" or key == "F" or "XX" in key.split("_")[-1]:
+                            continue
+                        else:
+                            name = key
+                            temp_content_str += (
+                                f'Speaker_{speaker_label}:"{sub_sent}"({multimodal_description[name]})\t'
+                            )
                 target_utterance = f'Speaker_{speaker_label}:"{sub_sent}"'
 
             content_target_dict[f"{conv_id}_{conv_turn}"] = label_set[dataset][
@@ -183,7 +180,7 @@ parser.add_argument(
     "--dataset", type=str, default="iemocap", help="Dataset name or path"
 )
 parser.add_argument(
-    "--historical_window", type=int, default=32, help="Historical window size"
+    "--historical_window", type=int, default=12, help="Historical window size"
 )
 args = parser.parse_args()
 
@@ -193,5 +190,3 @@ processed_data_path = process_dataset(
     dataset=args.dataset,
     window=args.historical_window,
 )
-
-print(processed_data_path)
