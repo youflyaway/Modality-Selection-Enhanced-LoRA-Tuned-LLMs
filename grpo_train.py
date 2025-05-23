@@ -52,7 +52,7 @@ def mark_num(text):
     return reward
 
 
-# 生成答案是否正确的奖励
+
 def response_reward(completions, **kwargs):
     responses = [completion for completion in completions]
     extracted_responses = [extract_answer(r) for r in responses]
@@ -63,10 +63,7 @@ def response_reward(completions, **kwargs):
         ]
 
     return_score = []
-    print(
-        f"\n模型输出:\n{responses[0]}",
-        f"\n提取后的答案:\n{extracted_responses[0]}",
-    )
+    
     for response in extracted_responses:
         if (
             overall_response[0].lower() in response.lower()
